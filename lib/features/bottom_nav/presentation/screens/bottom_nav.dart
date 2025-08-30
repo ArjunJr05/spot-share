@@ -1,11 +1,12 @@
 // main_page.dart
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:spot_share2/features/bot/presentation/screens/bot.dart';
 import 'package:spot_share2/features/bottom_nav/presentation/bloc/bottom_nav_bloc.dart';
 import 'package:spot_share2/features/bottom_nav/presentation/bloc/bottom_nav_event.dart';
 import 'package:spot_share2/features/bottom_nav/presentation/bloc/bottom_nav_state.dart';
 import 'package:spot_share2/features/home/presentation/screens/home_screen.dart';
+import 'package:spot_share2/features/map/presentation/screens/map_screen.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -17,20 +18,19 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  late AnimationController _fabAnimationController;
-  late Animation<double> _fabScaleAnimation;
-  late Animation<double> _fabRotationAnimation;
 
   final List<Widget> _pages = const [
     EnhancedHomePage(),
     MapScreen(),
     ProfileScreen(),
+    ChatbotPage()
   ];
 
   static const List<NavItemData> _navItems = [
     NavItemData(icon: Icons.home_rounded, text: 'Home', index: 0),
     NavItemData(icon: Icons.map_rounded, text: 'Map', index: 1),
     NavItemData(icon: Icons.person_rounded, text: 'Profile', index: 2),
+    NavItemData(icon: Icons.auto_awesome_rounded, text: 'Bot', index: 3),
   ];
 
   @override
@@ -46,26 +46,12 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
       CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
     );
 
-    _fabAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-
-    _fabScaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
-      CurvedAnimation(parent: _fabAnimationController, curve: Curves.easeInOut),
-    );
-
-    _fabRotationAnimation = Tween<double>(begin: 0.0, end: 0.1).animate(
-      CurvedAnimation(parent: _fabAnimationController, curve: Curves.easeInOut),
-    );
-
     _animationController.forward();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
-    _fabAnimationController.dispose();
     super.dispose();
   }
 
@@ -81,25 +67,6 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
     }
   }
 
-  void _onChatbotPressed() {
-    _fabAnimationController.forward().then((_) {
-      _fabAnimationController.reverse();
-    });
-    // Add your chatbot functionality here
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'AI Assistant activated!',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: const Color(0xFF1A1A1A),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -112,46 +79,6 @@ class _MainPageState extends State<MainPage> with TickerProviderStateMixin {
             backgroundColor: Colors.transparent,
             extendBody: true,
             body: _pages[currentIndex],
-            floatingActionButton: AnimatedBuilder(
-              animation: Listenable.merge([_fabScaleAnimation, _fabRotationAnimation]),
-              builder: (context, child) {
-                return Transform.scale(
-                  scale: _fabScaleAnimation.value,
-                  child: Transform.rotate(
-                    angle: _fabRotationAnimation.value,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF6366F1).withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                            spreadRadius: 0,
-                          ),
-                        ],
-                      ),
-                      child: FloatingActionButton(
-                        onPressed: _onChatbotPressed,
-                        backgroundColor: Colors.transparent,
-                        elevation: 0,
-                        child: const Icon(
-                          Icons.auto_awesome_rounded,
-                          color: Colors.white,
-                          size: 26,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
             bottomNavigationBar: Container(
               margin: const EdgeInsets.only(
                 left: 20.0,
@@ -223,7 +150,7 @@ class NavItemData {
   });
 }
 
-// Pill-style Nav Item Widget (like in your image)
+// Pill-style Nav Item Widget
 class PillNavItem extends StatefulWidget {
   final IconData icon;
   final String text;
@@ -252,12 +179,12 @@ class _PillNavItemState extends State<PillNavItem>
   @override
   void initState() {
     super.initState();
-    
+
     _pressController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 150),
     );
-    
+
     _pressAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
       CurvedAnimation(parent: _pressController, curve: Curves.easeInOut),
     );
@@ -296,7 +223,7 @@ class _PillNavItemState extends State<PillNavItem>
                 height: 38,
                 decoration: widget.isSelected
                     ? BoxDecoration(
-                        color: const Color(0xFF3A3A3C),
+                        color: const Color(0xFF3B46F1),
                         borderRadius: BorderRadius.circular(19),
                         border: Border.all(
                           color: Colors.white.withOpacity(0.1),
@@ -312,26 +239,36 @@ class _PillNavItemState extends State<PillNavItem>
                       duration: const Duration(milliseconds: 200),
                       child: Icon(
                         widget.icon,
-                        key: ValueKey('${widget.icon.codePoint}-${widget.isSelected}'),
+                        key: ValueKey(
+                            '${widget.icon.codePoint}-${widget.isSelected}'),
                         color: Colors.white,
                         size: 20.0,
                       ),
                     ),
                     if (widget.isSelected) ...[
-                      const SizedBox(width: 8),
-                      AnimatedOpacity(
-                        opacity: widget.isSelected ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: Text(
-                          widget.text,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
+  const SizedBox(width: 8),
+  Flexible(  // 👈 prevents overflow
+    child: AnimatedOpacity(
+      opacity: widget.isSelected ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 200),
+      child: FittedBox( // 👈 scales text if it's too long
+        fit: BoxFit.scaleDown,
+        child: Text(
+  widget.text,
+  maxLines: 1,
+  overflow: TextOverflow.ellipsis, // 👈 adds "..." if too long
+  style: const TextStyle(
+    color: Colors.white,
+    fontSize: 13, // 👈 slightly smaller
+    fontWeight: FontWeight.w500,
+  ),
+),
+
+      ),
+    ),
+  ),
+],
+
                   ],
                 ),
               ),
@@ -343,189 +280,6 @@ class _PillNavItemState extends State<PillNavItem>
   }
 }
 
-// Enhanced Map Screen with Dark Theme
-class MapScreen extends StatelessWidget {
-  const MapScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Explore Map',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Discover amazing places around you',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white.withOpacity(0.7),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                height: 220,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1A1A1A), Color(0xFF2A2A2A)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
-                    width: 1,
-                  ),
-                ),
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.map_rounded,
-                        size: 56,
-                        color: Color(0xFF6366F1),
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        'Interactive Map',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Your map integration goes here',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Expanded(
-                child: ListView(
-                  children: [
-                    _buildLocationCard(
-                      title: 'Current Location',
-                      subtitle: 'Chennai, Tamil Nadu',
-                      icon: Icons.my_location_rounded,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                      ),
-                    ),
-                    _buildLocationCard(
-                      title: 'Nearby Hotspots',
-                      subtitle: '23 locations discovered',
-                      icon: Icons.place_rounded,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF10B981), Color(0xFF059669)],
-                      ),
-                    ),
-                    _buildLocationCard(
-                      title: 'Saved Places',
-                      subtitle: '12 favorites saved',
-                      icon: Icons.bookmark_rounded,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLocationCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required LinearGradient gradient,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A1A1A), Color(0xFF2A2A2A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: gradient,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withOpacity(0.7),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 18,
-            color: Colors.white.withOpacity(0.5),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // Enhanced Profile Screen with Dark Theme
 class ProfileScreen extends StatelessWidget {

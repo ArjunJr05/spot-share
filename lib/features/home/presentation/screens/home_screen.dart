@@ -101,9 +101,8 @@ class EnhancedHomeView extends StatelessWidget {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF3B46F1), Color(0xFF3CC2A7)],
-                          ),
+                          
+                          color: Color(0xFF3B46F1),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
@@ -229,9 +228,9 @@ class EnhancedHomeView extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildStatCard('Parked Time', '02h 30m', Icons.timer, const Color(0xFF3B46F1)),
-                      _buildStatCard('Cost', '₹ 250', Icons.payments, const Color(0xFF3B46F1)),
-                      _buildStatCard('Location', 'Spot A4', Icons.location_on, const Color(0xFF3B46F1)),
+                      _buildStatCard('Parked Time', '02h 30m', Icons.timer, Colors.white),
+                      _buildStatCard('Cost', '₹ 250', Icons.payments, Colors.white),
+                      _buildStatCard('Location', 'Spot A4', Icons.location_on, Colors.white),
                     ],
                   ),
                   const KVerticalSpacer(height: 20),
@@ -252,10 +251,10 @@ class EnhancedHomeView extends StatelessWidget {
           width: 60,
           height: 60,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: Color(0xFF3B46F1),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Icon(icon, color: color, size: 28),
+          child: Icon(icon, color: Colors.white, size: 28),
         ),
         const KVerticalSpacer(height: 8),
         KText(

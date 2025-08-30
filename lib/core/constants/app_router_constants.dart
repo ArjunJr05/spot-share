@@ -9,7 +9,14 @@ class AppRouterConstants {
   static const String onBoarding = 'onBoarding';
 
   // Signup
-  static const String authSignUp = 'authSignUp';
+  static const String authLogIn= 'authLogIn';
+
+  // Signup
+  static const String authSignIn = 'authSignIn';
+  // Signup
+  static const String clientHome = 'clientHome';
+  // clientmainpage
+  static const String clientMainPage = 'ClientMainPage';
 
   // Auth Login Screen
   static const String authLogin = 'authLogin';

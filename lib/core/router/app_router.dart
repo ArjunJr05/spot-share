@@ -3,6 +3,8 @@ import 'package:spot_share2/features/bottom_nav/presentation/screens/bottom_nav.
 import 'package:spot_share2/features/home/presentation/screens/home_screen.dart';
 import 'package:spot_share2/features/splash/presentation/screens/splash_screen.dart';
 import 'package:go_router/go_router.dart';
+import 'package:spot_share2/placeHolder/bottom_nav/presentation/screens/bottom_nav.dart';
+import 'package:spot_share2/placeHolder/home/presentation/screens/home_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
@@ -32,6 +34,22 @@ final GoRouter appRouter = GoRouter(
       name: AppRouterConstants.bottomNav,
       builder: (context, state) {
         return MainPage();
+      },
+    ),
+
+    // GoRoute(
+    //   path: '/clientHome',
+    //   name: AppRouterConstants.clientHome,
+    //   builder: (context, state) {
+    //     return ClientHomeScreen();
+    //   },
+    // ),
+
+    GoRoute(
+      path: '/clientMainPage',
+      name: AppRouterConstants.clientMainPage,
+      builder: (context, state) {
+        return ClientMainPage();
       },
     ),
   ],

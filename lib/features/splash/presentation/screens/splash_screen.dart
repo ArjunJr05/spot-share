@@ -18,7 +18,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     Future.delayed(const Duration(seconds: 3), () {
       // Auth Login Screen
-      GoRouter.of(context).pushReplacementNamed(AppRouterConstants.bottomNav);
+      GoRouter.of(context).pushReplacementNamed(AppRouterConstants.authLogIn);
     });
   }
 
