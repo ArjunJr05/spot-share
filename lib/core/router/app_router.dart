@@ -1,10 +1,11 @@
 import 'package:spot_share2/core/constants/app_router_constants.dart';
-import 'package:spot_share2/features/bottom_nav/presentation/screens/bottom_nav.dart';
-import 'package:spot_share2/features/home/presentation/screens/home_screen.dart';
-import 'package:spot_share2/features/splash/presentation/screens/splash_screen.dart';
+import 'package:spot_share2/features/login/presentation/screens/login.dart';
+import 'package:spot_share2/features/placeHolder/bottom_nav/presentation/screens/bottom_nav.dart';
+import 'package:spot_share2/features/signin/presentation/screens/signin.dart';
+import 'package:spot_share2/features/users/bottom_nav/presentation/screens/bottom_nav.dart';
+import 'package:spot_share2/features/users/home/presentation/screens/home_screen.dart';
+import 'package:spot_share2/features/users/splash/presentation/screens/splash_screen.dart';
 import 'package:go_router/go_router.dart';
-import 'package:spot_share2/placeHolder/bottom_nav/presentation/screens/bottom_nav.dart';
-import 'package:spot_share2/placeHolder/home/presentation/screens/home_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
@@ -50,6 +51,22 @@ final GoRouter appRouter = GoRouter(
       name: AppRouterConstants.clientMainPage,
       builder: (context, state) {
         return ClientMainPage();
+      },
+    ),
+
+    GoRoute(
+      path: '/authLogIn',
+      name: AppRouterConstants.authLogIn,
+      builder: (context, state) {
+        return LoginScreen();
+      },
+    ),
+
+      GoRoute(
+      path: '/authSignIn',
+      name: AppRouterConstants.authSignIn,
+      builder: (context, state) {
+        return SignupScreen();
       },
     ),
   ],

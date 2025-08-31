@@ -9,7 +9,7 @@ class AppAssetsConstants {
       "assets/animations/success-animation.json";
 
   // Png
-  static const String fitNoshSplashLogo = "assets/images/splash.png";
+  static const String fitNoshSplashLogo = "assets/images/png/spotshare2.png";
 
   // Jpg
   static const String authLoginBg = "assets/images/jpg/auth-login-bg.jpg";
