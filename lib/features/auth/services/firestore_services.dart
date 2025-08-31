@@ -1,11 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:spot_share2/features/auth/services/base_services.dart';
 import 'package:spot_share2/features/auth/services/driver_services.dart';
 import 'package:spot_share2/features/auth/services/land_owner_services.dart';
-import 'package:spot_share2/firebase_options.dart';
 import 'package:spot_share2/features/placeHolder/AddParking/domain/location_model.dart';
-
+import 'package:geolocator/geolocator.dart';
 
 class FirestoreService {
   static final FirestoreService _instance = FirestoreService._internal();
@@ -186,6 +184,187 @@ class FirestoreService {
 
   Stream<List<LocationModel>> getLandownerLocationsStream(String landOwnerUid) => 
       _landownerService.getLandownerLocationsStream(landOwnerUid);
+
+  // NEW OPTIMIZED METHOD FOR MAP SCREEN
+  /// Gets all parking locations within a specified radius from a center point
+  /// This is optimized for the map screen to reduce data transfer and improve performance
+  Future<List<LocationModel>> getNearbyParkingLocations({
+    required double centerLatitude,
+    required double centerLongitude,
+    double radiusInKm = 5.0,
+    bool activeOnly = false,
+    bool availableOnly = false,
+  }) async {
+    try {
+      await ensureFirebaseInitialized();
+      
+      // Get all land owners
+      final landOwnersSnapshot = await getAllLandOwners();
+      List<LocationModel> nearbyLocations = [];
+
+      // Process each landowner's locations
+      for (var landOwnerDoc in landOwnersSnapshot.docs) {
+        final landOwnerUid = landOwnerDoc.id;
+        
+        // Get locations for this landowner
+        QuerySnapshot locationsSnapshot;
+        if (activeOnly) {
+          locationsSnapshot = await FirebaseFirestore.instance
+              .collection('land_owners')
+              .doc(landOwnerUid)
+              .collection('landlocations')
+              .where('isActive', isEqualTo: true)
+              .get();
+        } else {
+          locationsSnapshot = await FirebaseFirestore.instance
+              .collection('land_owners')
+              .doc(landOwnerUid)
+              .collection('landlocations')
+              .get();
+        }
+
+        for (var locationDoc in locationsSnapshot.docs) {
+          try {
+            final locationData = locationDoc.data() as Map<String, dynamic>;
+            final location = LocationModel.fromMap(locationData);
+
+            // Calculate distance
+            final distance = Geolocator.distanceBetween(
+              centerLatitude,
+              centerLongitude,
+              location.latitude,
+              location.longitude,
+            ) / 1000; // Convert to km
+
+            // Check if within radius
+            if (distance <= radiusInKm) {
+              // Check availability filter
+              if (availableOnly && location.capacityEmpty <= 0) {
+                continue; // Skip locations with no available spots
+              }
+
+              // Add landowner info to location for context
+              locationData['landOwnerUid'] = landOwnerUid;
+              locationData['distance'] = distance;
+              
+              final enrichedLocation = LocationModel.fromMap(locationData);
+              nearbyLocations.add(enrichedLocation);
+            }
+          } catch (e) {
+            print('Error processing location ${locationDoc.id}: $e');
+            continue; // Skip this location and continue with others
+          }
+        }
+      }
+
+      // Sort by distance (closest first)
+      nearbyLocations.sort((a, b) {
+        final aDistance = Geolocator.distanceBetween(
+          centerLatitude, centerLongitude, a.latitude, a.longitude,
+        );
+        final bDistance = Geolocator.distanceBetween(
+          centerLatitude, centerLongitude, b.latitude, b.longitude,
+        );
+        return aDistance.compareTo(bDistance);
+      });
+
+      return nearbyLocations;
+    } catch (e) {
+      print('Error getting nearby parking locations: $e');
+      return [];
+    }
+  }
+
+  /// Stream version for real-time updates of nearby locations
+  Stream<List<LocationModel>> getNearbyParkingLocationsStream({
+    required double centerLatitude,
+    required double centerLongitude,
+    double radiusInKm = 5.0,
+    bool activeOnly = false,
+  }) async* {
+    await ensureFirebaseInitialized();
+    
+    // Get all landowners first
+    final landOwnersSnapshot = await getAllLandOwners();
+    
+    // Create a combined stream from all landowner location streams
+    final List<Stream<QuerySnapshot>> locationStreams = [];
+    
+    for (var landOwnerDoc in landOwnersSnapshot.docs) {
+      final landOwnerUid = landOwnerDoc.id;
+      
+      Query query = FirebaseFirestore.instance
+          .collection('land_owners')
+          .doc(landOwnerUid)
+          .collection('landlocations');
+      
+      if (activeOnly) {
+        query = query.where('isActive', isEqualTo: true);
+      }
+      
+      locationStreams.add(query.snapshots());
+    }
+
+    // For now, we'll use a periodic approach since combining multiple streams is complex
+    // You could implement a more sophisticated stream combination if needed
+    yield* Stream.periodic(const Duration(seconds: 10), (_) async {
+      return await getNearbyParkingLocations(
+        centerLatitude: centerLatitude,
+        centerLongitude: centerLongitude,
+        radiusInKm: radiusInKm,
+        activeOnly: activeOnly,
+      );
+    }).asyncMap((future) => future);
+  }
+
+  /// Get nearby locations with additional filtering options
+  Future<List<LocationModel>> getFilteredNearbyLocations({
+    required double centerLatitude,
+    required double centerLongitude,
+    double radiusInKm = 5.0,
+    String? vehicleType, // Filter by vehicle type availability
+    double? maxOccupancyPercentage, // Filter by occupancy
+    double? minRating, // Filter by rating if available
+    int? limit, // Limit results
+  }) async {
+    var locations = await getNearbyParkingLocations(
+      centerLatitude: centerLatitude,
+      centerLongitude: centerLongitude,
+      radiusInKm: radiusInKm,
+      activeOnly: true,
+      availableOnly: true,
+    );
+
+    // Apply additional filters
+    if (vehicleType != null) {
+      locations = locations.where((location) {
+        switch (vehicleType.toLowerCase()) {
+          case 'car':
+            return location.vehicleCount.car < (location.totalSpots * 0.8); // Assume cars can use 80% of spots
+          case 'bike':
+            return location.vehicleCount.bike < (location.totalSpots * 0.5); // Bikes use less space
+          case 'auto':
+            return location.vehicleCount.auto < (location.totalSpots * 0.3);
+          case 'lorry':
+            return location.vehicleCount.lorry < (location.totalSpots * 0.2); // Lorries need more space
+          default:
+            return true;
+        }
+      }).toList();
+    }
+
+    if (maxOccupancyPercentage != null) {
+      locations = locations.where((location) => 
+          location.occupancyPercentage <= maxOccupancyPercentage).toList();
+    }
+
+    // Apply limit if specified
+    if (limit != null && locations.length > limit) {
+      locations = locations.take(limit).toList();
+    }
+
+    return locations;
+  }
 
   // Driver service methods
   Future<QuerySnapshot> getAllDrivers() => _driverService.getAllDrivers();
