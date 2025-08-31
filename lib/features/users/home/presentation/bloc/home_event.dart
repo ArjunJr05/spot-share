@@ -11,6 +11,23 @@ class CycleVehicleEvent extends HomeEvent {
 
 class RequestPermissionEvent extends HomeEvent {}
 
+class LoadDriverDataEvent extends HomeEvent {
+  final String driverUid;
+  LoadDriverDataEvent({required this.driverUid});
+}
+
+class UpdateParkingStatusEvent extends HomeEvent {
+  final bool isParked;
+  final String? location;
+  final double? cost;
+  
+  UpdateParkingStatusEvent({
+    required this.isParked,
+    this.location,
+    this.cost,
+  });
+}
+
 enum VehicleType {
   car,
   bike,

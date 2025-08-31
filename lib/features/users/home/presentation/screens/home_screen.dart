@@ -69,26 +69,32 @@ class EnhancedHomeView extends StatelessWidget {
 
           if (state is HomeLoaded) {
             final currentVehicle = state.availableVehicles[state.currentVehicleIndex];
+            final parkingData = state.parkingData;
+            
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
                   const KVerticalSpacer(height: 60),
+                  
+                  // Header with greeting and vehicle selector
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const KText(
-                            text: 'Choose Vehicle',
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            textColor: Colors.white,
+                          KText(
+                            text: 'Hello ${parkingData.driverName}',
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            textColor: Colors.grey[300],
                           ),
                           const KVerticalSpacer(height: 4),
                           KText(
-                            text: 'Select your parking vehicle type',
+                            text: parkingData.isCurrentlyParked 
+                                ? 'Your vehicle is safely parked'
+                                : 'Select your parking vehicle type',
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
                             textColor: Colors.grey[400],
@@ -101,12 +107,15 @@ class EnhancedHomeView extends StatelessWidget {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          
-                          color: Color(0xFF3B46F1),
+                          color: parkingData.isCurrentlyParked 
+                              ? const Color(0xFF3CC2A7) 
+                              : const Color(0xFF3B46F1),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF3B46F1).withOpacity(0.3),
+                              color: (parkingData.isCurrentlyParked 
+                                  ? const Color(0xFF3CC2A7) 
+                                  : const Color(0xFF3B46F1)).withOpacity(0.3),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -116,13 +125,17 @@ class EnhancedHomeView extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              currentVehicle.icon,
+                              parkingData.isCurrentlyParked 
+                                  ? Icons.local_parking 
+                                  : currentVehicle.icon,
                               color: Colors.white,
                               size: 18,
                             ),
                             const KHorizontalSpacer(width: 8),
                             KText(
-                              text: currentVehicle.displayName,
+                              text: parkingData.isCurrentlyParked 
+                                  ? 'PARKED' 
+                                  : currentVehicle.displayName,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               textColor: Colors.white,
@@ -132,28 +145,53 @@ class EnhancedHomeView extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const KVerticalSpacer(height: 30),
-                  SizedBox(
-                    height: 400,
-                    child: Stack(
-                      children: [
-                        if (state.isPermissionGranted)
-                          ModelViewer(
-                            key: ValueKey(currentVehicle.displayName),
-                            backgroundColor: Colors.transparent,
-                            src: currentVehicle.modelPath,
-                            alt: "${currentVehicle.displayName} 3D Model",
-                            ar: true,
-                            autoRotate: true,
-                            rotationPerSecond: "-15deg",
-                            cameraControls: true,
-                            disableZoom: false,
-                            loading: Loading.eager,
-                            shadowIntensity: 1.0,
-                            environmentImage: null,
-                          ),
-                        if (!state.isPermissionGranted)
-                          Center(
+                  
+                  const KVerticalSpacer(height: 40), // Reduced from default spacing
+                  
+                  // Vehicle Model Display Area (fixed height)
+                  Container(
+                    height: 300,
+                    child: state.isPermissionGranted
+                        ? Stack(
+                            children: [
+                              ModelViewer(
+                                key: ValueKey(currentVehicle.displayName),
+                                backgroundColor: Colors.transparent,
+                                src: currentVehicle.modelPath,
+                                alt: "${currentVehicle.displayName} 3D Model",
+                                ar: true,
+                                autoRotate: !parkingData.isCurrentlyParked,
+                                rotationPerSecond: parkingData.isCurrentlyParked ? "0deg" : "-15deg",
+                                cameraControls: true,
+                                disableZoom: false,
+                                loading: Loading.eager,
+                                shadowIntensity: 1.0,
+                                environmentImage: null,
+                              ),
+                              // Navigation arrows
+                              if (!parkingData.isCurrentlyParked) ...[
+                                Positioned(
+                                  left: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                                    onPressed: () => context.read<HomeBloc>().add(CycleVehicleEvent(isNext: false)),
+                                  ),
+                                ),
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+                                    onPressed: () => context.read<HomeBloc>().add(CycleVehicleEvent(isNext: true)),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          )
+                        : Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -203,37 +241,80 @@ class EnhancedHomeView extends StatelessWidget {
                               ],
                             ),
                           ),
-                        Positioned(
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          child: IconButton(
-                            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                            onPressed: () => context.read<HomeBloc>().add(CycleVehicleEvent(isNext: false)),
-                          ),
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          bottom: 0,
-                          child: IconButton(
-                            icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-                            onPressed: () => context.read<HomeBloc>().add(CycleVehicleEvent(isNext: true)),
-                          ),
+                  ),
+                  
+                  const KVerticalSpacer(height: 40),
+                  
+                  // Action Button
+                  Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: parkingData.isCurrentlyParked 
+                            ? [const Color(0xFFFF6B6B), const Color(0xFFFF8E8E)]
+                            : [const Color(0xFF3B46F1), const Color(0xFF3CC2A7)],
+                      ),
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (parkingData.isCurrentlyParked 
+                              ? const Color(0xFFFF6B6B) 
+                              : const Color(0xFF3B46F1)).withOpacity(0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(28),
+                        onTap: () {
+                          // Handle park/unpark action
+                          context.read<HomeBloc>().add(UpdateParkingStatusEvent(
+                            isParked: !parkingData.isCurrentlyParked,
+                            location: !parkingData.isCurrentlyParked ? 'Demo Location A4' : null,
+                            cost: !parkingData.isCurrentlyParked ? 0.0 : null,
+                          ));
+                        },
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                parkingData.isCurrentlyParked 
+                                    ? Icons.exit_to_app 
+                                    : Icons.local_parking,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                              const KHorizontalSpacer(width: 12),
+                              KText(
+                                text: parkingData.isCurrentlyParked 
+                                    ? 'End Parking Session' 
+                                    : 'Find Parking Spot',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                textColor: Colors.white,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  const KVerticalSpacer(height: 30),
+                  
+                  const KVerticalSpacer(height: 40),
+                  
+                  // Dynamic stats based on parking status
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildStatCard('Parked Time', '02h 30m', Icons.timer, Colors.white),
-                      _buildStatCard('Cost', '₹ 250', Icons.payments, Colors.white),
-                      _buildStatCard('Location', 'Spot A4', Icons.location_on, Colors.white),
-                    ],
+                    children: _buildDynamicStats(parkingData),
                   ),
-                  const KVerticalSpacer(height: 20),
+                  
+                  // Add bottom padding to account for bottom navigation bar
+                  SizedBox(height: 20),
                 ],
               ),
             );
@@ -244,15 +325,79 @@ class EnhancedHomeView extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  List<Widget> _buildDynamicStats(DriverParkingData parkingData) {
+    if (parkingData.isCurrentlyParked) {
+      // Show current parking session stats
+      return [
+        _buildStatCard(
+          'Parked Time', 
+          parkingData.displayTime, 
+          Icons.access_time, 
+          Colors.white,
+          isHighlighted: true,
+        ),
+        _buildStatCard(
+          'Current Cost', 
+          parkingData.displayCost, 
+          Icons.payments, 
+          Colors.white,
+          isHighlighted: true,
+        ),
+        _buildStatCard(
+          'Location', 
+          parkingData.displayLocation, 
+          Icons.location_on, 
+          Colors.white,
+          isHighlighted: true,
+        ),
+      ];
+    } else {
+      // Show overall statistics when not parked
+      return [
+        _buildStatCard(
+          'Total Rides', 
+          '${parkingData.totalRides}', 
+          Icons.directions_car, 
+          Colors.white,
+        ),
+        _buildStatCard(
+          'Total Spent', 
+          '₹ ${parkingData.totalSpent.toStringAsFixed(0)}', 
+          Icons.account_balance_wallet, 
+          Colors.white,
+        ),
+        _buildStatCard(
+          'Rating', 
+          parkingData.rating > 0 ? '${parkingData.rating.toStringAsFixed(1)} ⭐' : 'No Rating', 
+          Icons.star, 
+          Colors.white,
+        ),
+      ];
+    }
+  }
+
+  Widget _buildStatCard(
+    String title, 
+    String value, 
+    IconData icon, 
+    Color color, {
+    bool isHighlighted = false,
+  }) {
     return Column(
       children: [
         Container(
           width: 60,
           height: 60,
           decoration: BoxDecoration(
-            color: Color(0xFF3B46F1),
+            color: isHighlighted ? const Color(0xFF3CC2A7) : const Color(0xFF3B46F1),
             borderRadius: BorderRadius.circular(16),
+            boxShadow: isHighlighted ? [
+              BoxShadow(
+                color: const Color(0xFF3CC2A7).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ] : null,
           ),
           child: Icon(icon, color: Colors.white, size: 28),
         ),
@@ -271,53 +416,5 @@ class EnhancedHomeView extends StatelessWidget {
         ),
       ],
     );
-  
   }
-
 }
-
-class SyncedCurvedProgressPainter extends CustomPainter {
-  final double progress;
-  SyncedCurvedProgressPainter({required this.progress});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint basePaint = Paint()
-      ..color = const Color.fromARGB(255, 22, 94, 218).withOpacity(0.3)
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke;
-
-    final Paint progressPaint = Paint()
-      ..color = const Color(0xFF3CC2A7)
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-
-    Rect rect = Rect.fromLTWH(0, -size.height, size.width, size.height * 2);
-    double sweepAngle = math.pi * 0.50;
-    double startAngle = (math.pi - sweepAngle) / 2;
-
-    canvas.drawArc(rect, startAngle, sweepAngle, false, basePaint);
-    canvas.drawArc(rect, startAngle, sweepAngle * progress, false, progressPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-// =========================================================================
-// home_state.dart
-// =========================================================================
-
-
-
-// =========================================================================
-// home_event.dart
-// =========================================================================
-
-
-// =========================================================================
-// home_bloc.dart
-// =========================================================================
-
